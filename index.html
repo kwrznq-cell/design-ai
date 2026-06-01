@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Марина — дизайнер GetsMine</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #EBF2FF; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+.container { background: white; border-radius: 16px; width: 100%; max-width: 600px; overflow: hidden; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
+.header { background: white; padding: 16px 20px; border-bottom: 1px solid #EBF2FF; display: flex; align-items: center; gap: 12px; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: #2F80ED; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 16px; }
+.header-info h1 { font-size: 15px; font-weight: 600; color: #0A0A0A; }
+.header-info p { font-size: 12px; color: #888; }
+.setup { padding: 16px 20px; background: #EBF2FF; border-bottom: 1px solid #dce8fa; }
+.setup p { font-size: 13px; color: #555; margin-bottom: 8px; }
+.setup-row { display: flex; gap: 8px; }
+.setup input { flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; }
+.setup button { padding: 8px 16px; background: #2F80ED; color: white; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+.chat { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; min-height: 300px; max-height: 400px; overflow-y: auto; }
+.msg { display: flex; gap: 8px; }
+.msg.user { flex-direction: row-reverse; }
+.msg-av { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+.msg.bot .msg-av { background: #2F80ED; color: white; }
+.msg.user .msg-av { background: #EBF2FF; color: #2F80ED; }
+.bubble { max-width: 80%; padding: 10px 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+.msg.bot .bubble { background: #f7f9fc; border: 1px solid #e8eef8; border-radius: 4px 12px 12px 12px; color: #0A0A0A; }
+.msg.user .bubble { background: #2F80ED; color: white; border-radius: 12px 4px 12px 12px; }
+.chips { padding: 0 20px 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { padding: 6px 12px; border: 1px solid #2F80ED; color: #2F80ED; border-radius: 20px; font-size: 12px; cursor: pointer; background: white; }
+.chip:hover { background: #EBF2FF; }
+.input-row { padding: 16px 20px; border-top: 1px solid #EBF2FF; display: flex; gap: 8px; }
+.input-row input { flex: 1; padding: 10px 14px; border: 1px solid #dce8fa; border-radius: 10px; font-size: 14px; outline: none; }
+.input-row input:focus { border-color: #2F80ED; }
+.input-row button { padding: 10px 20px; background: #2F80ED; color: white; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="avatar">М</div>
+    <div class="header-info">
+      <h1>Марина — дизайнер GetsMine</h1>
+      <p id="status">введи API ключ для начала работы</p>
+    </div>
+  </div>
+  <div class="setup" id="setup">
+    <p>Вставь Anthropic API ключ (хранится только в браузере):</p>
+    <div class="setup-row">
+      <input type="password" id="apikey" placeholder="sk-ant-api03-..." />
+      <button onclick="connect()">Подключить</button>
+    </div>
+  </div>
+  <div class="chat" id="chat"></div>
+  <div class="chips">
+    <button class="chip" onclick="ask('Сделай бриф для баннера про акцию на майнеры')">Бриф для баннера</button>
+    <button class="chip" onclick="ask('Идеи для поста Instagram')">Пост Instagram</button>
+    <button class="chip" onclick="ask('Текст для кнопки на главной')">Текст кнопки</button>
+  </div>
+  <div class="input-row">
+    <input type="text" id="inp" placeholder="Напиши задачу Марине..." onkeydown="if(event.key==='Enter')send()" />
+    <button onclick="send()">Отправить</button>
+  </div>
+</div>
+<script>
+const SYSTEM = `Ты — AI-дизайнер GetsMine по имени Марина. Отвечай только по-русски, кратко и конкретно. Знаешь брендбук: цвета #FFFFFF, #EBF2FF, #2F80ED, #0A0A0A. Шрифт Open Sans. 3D-формы голубого стекла. Запрещено: капслок, правое выравнивание, stock фото, острые углы. Форматы соцсетей 1080x1080px, отступы 50px.`;
+let history = [];
+let key = localStorage.getItem('marina_key') || '';
+if (key) { document.getElementById('apikey').value = key; connect(); }
+
+function connect() {
+  key = document.getElementById('apikey').value.trim();
+  if (!key.startsWith('sk-ant')) { alert('Ключ должен начинаться с sk-ant-...'); return; }
+  localStorage.setItem('marina_key', key);
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('status').textContent = 'онлайн';
+  addMsg('Привет! Я Марина, дизайнер GetsMine. Знаю весь брендбук. Дай задачу — сделаю бриф, придумаю идею или проверю макет.', false);
+}
+
+function addMsg(text, isUser) {
+  const chat = document.getElementById('chat');
+  const d = document.createElement('div');
+  d.className = 'msg ' + (isUser ? 'user' : 'bot');
+  d.innerHTML = `<div class="msg-av">${isUser ? 'Я' : 'М'}</div><div class="bubble">${text}</div>`;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+  return d.querySelector('.bubble');
+}
+
+function ask(q) { document.getElementById('inp').value = q; send(); }
+
+async function send() {
+  const inp = document.getElementById('inp');
+  const text = inp.value.trim();
+  if (!text || !key) return;
+  inp.value = '';
+  addMsg(text, true);
+  history.push({ role: 'user', content: text });
+  const bubble = addMsg('Думаю...', false);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM, messages: history })
+    });
+    const data = await res.json();
+    if (data.error) { bubble.textContent = 'Ошибка: ' + data.error.message; return; }
+    const reply = data.content[0].text;
+    bubble.textContent = reply;
+    history.push({ role: 'assistant', content: reply });
+  } catch(e) { bubble.textContent = 'Ошибка соединения.'; }
+}
+</script>
+</body>
+</html>
