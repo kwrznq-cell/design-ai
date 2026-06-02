@@ -100,7 +100,12 @@ async function send() {
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-allow-browser': 'true'
+      },
       body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM, messages: history })
     });
     const data = await res.json();
@@ -108,7 +113,7 @@ async function send() {
     const reply = data.content[0].text;
     bubble.textContent = reply;
     history.push({ role: 'assistant', content: reply });
-  } catch(e) { bubble.textContent = 'Ошибка соединения.'; }
+  } catch(e) { bubble.textContent = 'Ошибка соединения: ' + e.message; }
 }
 </script>
 </body>
